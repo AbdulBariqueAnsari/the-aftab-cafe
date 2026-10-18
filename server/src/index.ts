@@ -121,8 +121,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   res.status(500).json({ error: err.message || 'Internal server error.' });
 });
 
-server.listen(PORT, () => {
-  console.log(`☕ THE AFTAB Cafe Server running on http://localhost:${PORT}`);
+server.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`☕ THE AFTAB Cafe Server running on port ${PORT}`);
 });
 
 process.on('SIGINT', async () => {
