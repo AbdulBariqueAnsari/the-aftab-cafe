@@ -1,0 +1,13 @@
+node_modules/
+client/node_modules/
+dist/
+client/dist/
+.env
+*.log
+.DS_Store
+prisma/*.db
+prisma/*.db-journal
+dev.db
+dev.db-journal
+uploads/*
+!uploads/.gitkeep

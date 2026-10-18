@@ -1,0 +1,269 @@
+// THE AFTAB — Premium Cafe Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         String     @default("SERVICE_STAFF") // SUPER_ADMIN, MANAGER, CASHIER, BARISTA, SERVICE_STAFF
+  phone        String?
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+}
+
+model Category {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  slug         String    @unique
+  description  String?
+  image        String?
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+  products     Product[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Product {
+  id                     String                 @id @default(uuid())
+  name                   String
+  slug                   String                 @unique
+  description            String
+  image                  String
+  categoryId             String
+  category               Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  basePrice              Float
+  discountedPrice        Float?
+  isVeg                  Boolean                @default(true)
+  isBestseller           Boolean                @default(false)
+  isNew                  Boolean                @default(false)
+  isRecommended          Boolean                @default(false)
+  isAvailable            Boolean                @default(true)
+  preparationTimeMinutes Int                    @default(10)
+  displayOrder           Int                    @default(0)
+  customizationGroups    CustomizationGroup[]
+  recipeItems            RecipeItem[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+}
+
+model CustomizationGroup {
+  id            String                @id @default(uuid())
+  productId     String
+  product       Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name          String // e.g. "Size", "Milk Choice", "Sugar Level", "Add-ons"
+  type          String                @default("SINGLE") // SINGLE or MULTIPLE
+  required      Boolean               @default(false)
+  minSelections Int                   @default(0)
+  maxSelections Int                   @default(1)
+  displayOrder  Int                   @default(0)
+  options       CustomizationOption[]
+}
+
+model CustomizationOption {
+  id            String             @id @default(uuid())
+  groupId       String
+  group         CustomizationGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name          String // e.g. "Regular", "Large", "Oat Milk", "No Sugar"
+  priceModifier Float              @default(0)
+  isDefault     Boolean            @default(false)
+  isAvailable   Boolean            @default(true)
+  displayOrder  Int                @default(0)
+}
+
+model CafeTable {
+  id        String   @id @default(uuid())
+  number    String   @unique // e.g. "T1", "T2", "T3"
+  name      String // e.g. "Window Corner", "Outdoor Terrace"
+  capacity  Int      @default(2)
+  status    String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, OUT_OF_SERVICE
+  qrCode    String?
+  notes     String?
+  active    Boolean  @default(true)
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id                  String             @id @default(uuid())
+  orderNumber         String             @unique // e.g. "AFT-20261018-001"
+  orderType           String             @default("DINE_IN") // DINE_IN, TAKEAWAY
+  status              String             @default("ORDER_RECEIVED") // ORDER_RECEIVED, ORDER_ACCEPTED, PREPARING, READY_TO_SERVE, SERVED, COMPLETED, CANCELLED
+  customerName        String
+  customerPhone       String?
+  tableId             String?
+  table               CafeTable?         @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  tableNumber         String? // snapshot at time of order
+  subtotal            Float
+  discount            Float              @default(0)
+  taxAmount           Float              @default(0)
+  serviceCharge       Float              @default(0)
+  grandTotal          Float
+  paymentMethod       String             @default("PAY_AT_COUNTER") // PAY_AT_COUNTER, CASH_ON_DELIVERY, PAY_AT_TABLE, ONLINE
+  paymentStatus       String             @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  specialInstructions String?
+  cancellationReason  String?
+  items               OrderItem[]
+  couponRedemptions   CouponRedemption[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
+model OrderItem {
+  id             String                    @id @default(uuid())
+  orderId        String
+  order          Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String?
+  productName    String // snapshot
+  categoryName   String // snapshot
+  unitPrice      Float // snapshot base price
+  quantity       Int                       @default(1)
+  subtotal       Float
+  notes          String?
+  isVeg          Boolean                   @default(true)
+  customizations OrderItemCustomization[]
+}
+
+model OrderItemCustomization {
+  id            String    @id @default(uuid())
+  orderItemId   String
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  groupName     String // snapshot e.g. "Size"
+  optionName    String // snapshot e.g. "Large"
+  priceModifier Float     @default(0)
+}
+
+model Coupon {
+  id             String             @id @default(uuid())
+  code           String             @unique
+  discountType   String             @default("PERCENTAGE") // PERCENTAGE or FIXED
+  discountValue  Float
+  minOrderAmount Float              @default(0)
+  maxDiscount    Float?
+  validFrom      DateTime           @default(now())
+  validUntil     DateTime?
+  usageLimit     Int?
+  timesUsed      Int                @default(0)
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+  redemptions    CouponRedemption[]
+}
+
+model CouponRedemption {
+  id             String   @id @default(uuid())
+  couponId       String
+  coupon         Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  discountAmount Float
+  redeemedAt     DateTime @default(now())
+}
+
+model GalleryImage {
+  id           String   @id @default(uuid())
+  title        String
+  category     String // "Cafe Interior", "Coffee and Tea", "Food and Snacks", "Events", "Customer Moments"
+  imageUrl     String
+  caption      String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model WebsiteSettings {
+  id                   Int      @id @default(1)
+  cafeName             String   @default("THE AFTAB")
+  tagline              String   @default("Every Sip, A Little Sunshine.")
+  heroHeadline         String   @default("THE AFTAB — Every Sip, A Little Sunshine.")
+  heroSubtitle         String   @default("Freshly Brewed. Beautifully Served.")
+  heroImage            String   @default("https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=80")
+  announcementBanner   String   @default("Welcome to THE AFTAB. Experience artisan coffee & handcrafted teas.")
+  showAnnouncement     Boolean  @default(true)
+  primaryColor         String   @default("#2C1810")
+  accentColor          String   @default("#C67D3A")
+  darkModeEnabled      Boolean  @default(false)
+  phone                String   @default("+91 98765 43210")
+  email                String   @default("hello@theaftabcafe.com")
+  address              String   @default("42 Sunshine Boulevard, Heritage Quarter, New Delhi, India")
+  openingHours         String   @default("Mon - Sun: 8:00 AM – 11:00 PM")
+  googleMapsEmbedUrl   String?
+  instagramUrl         String   @default("https://instagram.com/theaftabcafe")
+  facebookUrl          String   @default("https://facebook.com/theaftabcafe")
+  twitterUrl           String   @default("https://twitter.com/theaftabcafe")
+  currencySymbol       String   @default("₹")
+  taxRatePercent       Float    @default(5.0) // 5% GST
+  serviceChargePercent Float    @default(0.0)
+  minOrderAmount       Float    @default(0.0)
+  requireCustomerPhone Boolean  @default(false)
+  allowDineIn          Boolean  @default(true)
+  allowTakeaway        Boolean  @default(true)
+  enableReviews        Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CustomerReview {
+  id           String   @id @default(uuid())
+  customerName String
+  rating       Int      @default(5)
+  reviewText   String
+  isApproved   Boolean  @default(true)
+  isFeatured   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model InventoryIngredient {
+  id            String          @id @default(uuid())
+  name          String          @unique
+  unit          String // "kg", "liters", "grams", "ml", "packets"
+  currentStock  Float           @default(0)
+  minStockAlert Float           @default(5)
+  unitCost      Float           @default(0)
+  supplier      String?
+  recipeItems   RecipeItem[]
+  movements     StockMovement[]
+  updatedAt     DateTime        @updatedAt
+}
+
+model RecipeItem {
+  id             String              @id @default(uuid())
+  productId      String
+  product        Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredientId   String
+  ingredient     InventoryIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  quantityNeeded Float // quantity in ingredient.unit needed per product serving
+}
+
+model StockMovement {
+  id           String              @id @default(uuid())
+  ingredientId String
+  ingredient   InventoryIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  movementType String // "PURCHASE", "USAGE", "WASTAGE", "ADJUSTMENT"
+  quantity     Float // positive or negative
+  notes        String?
+  createdBy    String?
+  createdAt    DateTime            @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}

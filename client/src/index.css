@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-espresso: #2C1810;
+    --brand-caramel: #C67D3A;
+    --brand-gold: #E5A84B;
+    --brand-cream: #FAF6F0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #FAF8F5;
+    color: #1C1917;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  .font-brand {
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F5EBE1;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4A373;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #BC6C25;
+}
+
+/* Print Styles for Kitchen Tickets & Receipts */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 8px;
+    font-size: 12px;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.02); }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s infinite ease-in-out;
+}
