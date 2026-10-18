@@ -8,7 +8,7 @@
     "dev:client": "npm --prefix client run dev",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
     "build:client": "npm --prefix client run build",
-    "build": "npm --prefix client install && npx prisma generate && npx prisma db push && tsx server/src/seed.ts && npm run build:client",
+    "build": "npm --prefix client install --include=dev && npx prisma generate && npx prisma db push && tsx server/src/seed.ts && npm run build:client",
     "start": "node index.js",
     "seed": "tsx server/src/seed.ts",
     "test": "tsx tests/acceptance.ts",
